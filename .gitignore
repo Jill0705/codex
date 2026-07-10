@@ -1,0 +1,28 @@
+# Local agent/tool state
+.agents/
+.codex/
+.venv/
+outputs/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*
+
+# Experiment data and generated artifacts
+work/aspnet_experiments/data/
+work/aspnet_experiments/logs/
+work/aspnet_experiments/runs/
+work/aspnet_experiments/**/*.pt
+work/aspnet_experiments/**/*.pth
+work/aspnet_experiments/**/*.ckpt
+
+# Temporary files
+work/node_write_test.txt
+*.tmp
+*.log
