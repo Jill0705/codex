@@ -1,0 +1,13 @@
+{
+  "privacy_red_lines": [
+    {
+      "name": "paper_content_documents_must_not_be_open_sourced",
+      "rule": "Do not commit, push, or otherwise open-source paper manuscripts, drafts, notes, visual organization documents, PDFs, DOC/DOCX files, TeX sources, or any document containing unpublished paper content.",
+      "examples": [
+        "ASPnet(1).pdf",
+        "ASPNet_可视化整理版 (1).docx"
+      ],
+      "required_action": "Keep paper-content documents local/private and remove them from GitHub if they are accidentally tracked."
+    }
+  ]
+}

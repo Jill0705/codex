@@ -22,6 +22,12 @@ work/aspnet_experiments/**/*.pt
 work/aspnet_experiments/**/*.pth
 work/aspnet_experiments/**/*.ckpt
 
+# Private paper/manuscript documents
+*.pdf
+*.doc
+*.docx
+*.tex
+
 # Temporary files
 work/node_write_test.txt
 *.tmp
