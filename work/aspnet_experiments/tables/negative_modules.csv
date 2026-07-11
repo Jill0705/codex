@@ -1,4 +1,6 @@
 ﻿"method","IF","seed","budget","role","run_name","status","prototypes","k_distribution","best_epoch","val","many","medium","few"
+"LDAM-DRW invalid diagnostic","100","1","N/A","negative","ldam_drw_if100_e50","ok","N/A","N/A","34","1.0","0.0","0.0","2.9411764705882355"
+"LDAM-DRW invalid diagnostic","50","1","N/A","negative","ldam_drw_if50_e50","ok","N/A","N/A","27","1.03","3.121212121212121","0.0","0.0"
 "Linear B300 unstable","100","1","300","negative","adaptive_linear_budget300_e50","ok","300","K=1:33 K=2:26 K=3:11 K=4:7 K=5:6 K=6:4 K=7:4 K=8:9","47","33.03","63.03030303030303","31.666666666666668","5.235294117647059"
 "Linear B300 unstable","100","2","300","negative","adaptive_linear_budget300_e50_seed2","ok","300","K=1:33 K=2:26 K=3:11 K=4:7 K=5:6 K=6:4 K=7:4 K=8:9","50","30.41","59.36363636363637","28.454545454545453","4.205882352941177"
 "Linear B300 unstable","100","3","300","negative","adaptive_linear_budget300_e50_seed3","ok","300","K=1:33 K=2:26 K=3:11 K=4:7 K=5:6 K=6:4 K=7:4 K=8:9","49","32.74","63.27272727272727","29.939393939393938","5.823529411764706"

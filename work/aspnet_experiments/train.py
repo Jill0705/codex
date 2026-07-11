@@ -36,6 +36,9 @@ def parse_args():
     p.add_argument('--la-tau', type=float, default=1.0)
     p.add_argument('--loss', default='ce', choices=['ce', 'balanced_softmax', 'ldam'])
     p.add_argument('--drw-epoch', type=int, default=0)
+    p.add_argument('--ldam-scale', type=float, default=30.0)
+    p.add_argument('--ldam-max-m', type=float, default=0.5)
+    p.add_argument('--ldam-reweight-beta', type=float, default=0.9999)
     p.add_argument('--epochs', type=int, default=200)
     p.add_argument('--batch-size', type=int, default=128)
     p.add_argument('--lr', type=float, default=0.1)
@@ -183,7 +186,14 @@ def main():
     if hasattr(model.head, 'proto_counts'):
         save_json({'proto_counts': model.head.proto_counts, 'total_prototypes': int(sum(model.head.proto_counts))}, os.path.join(run_dir, 'prototype_counts.json'))
 
-    criterion = build_loss(args.loss, cls_num_list, drw_epoch=args.drw_epoch).to(device)
+    criterion = build_loss(
+        args.loss,
+        cls_num_list,
+        drw_epoch=args.drw_epoch,
+        ldam_scale=args.ldam_scale,
+        ldam_max_m=args.ldam_max_m,
+        ldam_reweight_beta=args.ldam_reweight_beta,
+    ).to(device)
     log_prior = make_log_prior(cls_num_list, device) if args.logit_adjustment else None
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)

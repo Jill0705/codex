@@ -14,7 +14,7 @@ class BalancedSoftmaxLoss(nn.Module):
 
 
 class LDAMLoss(nn.Module):
-    def __init__(self, cls_num_list, max_m=0.5, scale=30.0, drw_epoch=0):
+    def __init__(self, cls_num_list, max_m=0.5, scale=30.0, drw_epoch=0, reweight_beta=0.9999):
         super().__init__()
         counts = torch.tensor(cls_num_list, dtype=torch.float32)
         margins = 1.0 / torch.sqrt(torch.sqrt(counts.clamp_min(1.0)))
@@ -24,8 +24,9 @@ class LDAMLoss(nn.Module):
         self.scale = float(scale)
         self.drw_epoch = int(drw_epoch)
 
-        effective_num = 1.0 - torch.pow(torch.tensor(0.9999), counts)
-        weights = (1.0 - 0.9999) / effective_num.clamp_min(1e-12)
+        beta = torch.tensor(float(reweight_beta), dtype=torch.float32)
+        effective_num = 1.0 - torch.pow(beta, counts)
+        weights = (1.0 - beta) / effective_num.clamp_min(1e-12)
         weights = weights / weights.sum().clamp_min(1e-12) * len(cls_num_list)
         self.register_buffer('deferred_weights', weights)
 
@@ -43,11 +44,17 @@ class LDAMLoss(nn.Module):
         return F.cross_entropy(self.scale * adjusted, target, weight=self.class_weights)
 
 
-def build_loss(name, cls_num_list, drw_epoch=0):
+def build_loss(name, cls_num_list, drw_epoch=0, ldam_scale=30.0, ldam_max_m=0.5, ldam_reweight_beta=0.9999):
     if name == 'ce':
         return nn.CrossEntropyLoss()
     if name == 'balanced_softmax':
         return BalancedSoftmaxLoss(cls_num_list)
     if name == 'ldam':
-        return LDAMLoss(cls_num_list, drw_epoch=drw_epoch)
+        return LDAMLoss(
+            cls_num_list,
+            max_m=ldam_max_m,
+            scale=ldam_scale,
+            drw_epoch=drw_epoch,
+            reweight_beta=ldam_reweight_beta,
+        )
     raise ValueError(f'Unknown loss: {name}')

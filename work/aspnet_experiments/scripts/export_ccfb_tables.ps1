@@ -1,5 +1,7 @@
 param(
-    [string]$TablesDir = "tables"
+    [string]$TablesDir = "tables",
+    [string]$LdamScaleTag = "1",
+    [int]$ExpectedEpochs = 50
 )
 
 $ErrorActionPreference = "Continue"
@@ -18,6 +20,20 @@ function Get-BestMetrics {
         return $null
     }
     return $rows | Sort-Object {[double]$_.val_acc} -Descending | Select-Object -First 1
+}
+
+function Get-LastEpoch {
+    param([string]$RunName)
+    $metrics = Join-Path "runs" "$RunName\metrics.csv"
+    if (-not (Test-Path $metrics)) {
+        return $null
+    }
+    $rows = @(Import-Csv $metrics)
+    if ($rows.Count -eq 0) {
+        return $null
+    }
+    $last = $rows | Select-Object -Last 1
+    return [int]$last.epoch
 }
 
 function Get-PrototypeInfo {
@@ -65,6 +81,12 @@ function New-ResultRow {
         }
     }
 
+    $lastEpoch = Get-LastEpoch $RunName
+    $status = "ok"
+    if ($null -eq $lastEpoch -or $lastEpoch -lt $ExpectedEpochs) {
+        $status = "incomplete"
+    }
+
     return [pscustomobject]@{
         method = $Method
         IF = $IF
@@ -72,7 +94,7 @@ function New-ResultRow {
         budget = $Budget
         role = $Role
         run_name = $RunName
-        status = "ok"
+        status = $status
         prototypes = $proto.Prototypes
         k_distribution = $proto.KDist
         best_epoch = $best.epoch
@@ -122,6 +144,7 @@ function New-AggregateRows {
             role = $first.role
             n = $vals.Count
             prototypes = $first.prototypes
+            k_distribution = $first.k_distribution
             val_mean = "{0:N2}" -f (Get-Mean $vals)
             val_std = "{0:N2}" -f (Get-Std $vals)
             many_mean = "{0:N2}" -f (Get-Mean $many)
@@ -148,20 +171,22 @@ function Write-Table {
 $ccfbIf100 = @(
     New-ResultRow "CE" "100" "1" "N/A" "ce_e50"
     New-ResultRow "Balanced Softmax" "100" "1" "N/A" "balanced_softmax_if100_e50"
-    New-ResultRow "LDAM-DRW" "100" "1" "N/A" "ldam_drw_if100_e50"
+    New-ResultRow "LDAM-DRW" "100" "1" "N/A" "ldam_drw_if100_e50_s$LdamScaleTag"
     New-ResultRow "Fixed K4" "100" "1" "400" "fixed_k4_t01_tau025_e50"
     New-ResultRow "Sqrt B200" "100" "1" "200" "adaptive_sqrt_budget200_e50"
-    New-ResultRow "Sqrt B200 + BS" "100" "1" "200" "adaptive_sqrt_budget200_if100_e50_bs" "optional"
+    New-ResultRow "Sqrt B200 + BS" "100" "1" "200" "adaptive_sqrt_budget200_if100_e50_bs" "compatibility"
+    New-ResultRow "Sqrt B200 + LDAM" "100" "1" "200" "adaptive_sqrt_budget200_if100_e50_ldam_s$LdamScaleTag" "compatibility"
 )
 
 $ccfbIf50 = @(
     New-ResultRow "CE" "50" "1" "N/A" "ce_if50_e50"
     New-ResultRow "Balanced Softmax" "50" "1" "N/A" "balanced_softmax_if50_e50"
-    New-ResultRow "LDAM-DRW" "50" "1" "N/A" "ldam_drw_if50_e50"
+    New-ResultRow "LDAM-DRW" "50" "1" "N/A" "ldam_drw_if50_e50_s$LdamScaleTag"
     New-ResultRow "Fixed K3" "50" "1" "300" "fixed_k3_if50_e50"
     New-ResultRow "Fixed K4" "50" "1" "400" "fixed_k4_if50_e50"
     New-ResultRow "Sqrt B300" "50" "1" "300" "adaptive_sqrt_budget300_if50_e50"
-    New-ResultRow "Sqrt B300 + BS" "50" "1" "300" "adaptive_sqrt_budget300_if50_e50_bs" "optional"
+    New-ResultRow "Sqrt B300 + BS" "50" "1" "300" "adaptive_sqrt_budget300_if50_e50_bs" "compatibility"
+    New-ResultRow "Sqrt B300 + LDAM" "50" "1" "300" "adaptive_sqrt_budget300_if50_e50_ldam_s$LdamScaleTag" "compatibility"
 )
 
 $stabilityRows = @(
@@ -183,6 +208,8 @@ $stabilityRows = @(
 )
 
 $negativeRows = @(
+    New-ResultRow "LDAM-DRW invalid diagnostic" "100" "1" "N/A" "ldam_drw_if100_e50" "negative"
+    New-ResultRow "LDAM-DRW invalid diagnostic" "50" "1" "N/A" "ldam_drw_if50_e50" "negative"
     New-ResultRow "Linear B300 unstable" "100" "1" "300" "adaptive_linear_budget300_e50" "negative"
     New-ResultRow "Linear B300 unstable" "100" "2" "300" "adaptive_linear_budget300_e50_seed2" "negative"
     New-ResultRow "Linear B300 unstable" "100" "3" "300" "adaptive_linear_budget300_e50_seed3" "negative"
@@ -196,8 +223,24 @@ $negativeRows = @(
     New-ResultRow "Adaptive K8 + LA" "100" "1" "449" "adaptive_k8_t01_tau025_e50_la" "negative"
 )
 
+$ldamCompatRows = @(
+    New-ResultRow "LDAM-DRW" "100" "1" "N/A" "ldam_drw_if100_e50_s$LdamScaleTag" "compatibility"
+    New-ResultRow "LDAM-DRW" "100" "2" "N/A" "ldam_drw_if100_e50_s${LdamScaleTag}_seed2" "compatibility"
+    New-ResultRow "LDAM-DRW" "100" "3" "N/A" "ldam_drw_if100_e50_s${LdamScaleTag}_seed3" "compatibility"
+    New-ResultRow "Sqrt B200 + LDAM" "100" "1" "200" "adaptive_sqrt_budget200_if100_e50_ldam_s$LdamScaleTag" "compatibility"
+    New-ResultRow "Sqrt B200 + LDAM" "100" "2" "200" "adaptive_sqrt_budget200_if100_e50_ldam_s${LdamScaleTag}_seed2" "compatibility"
+    New-ResultRow "Sqrt B200 + LDAM" "100" "3" "200" "adaptive_sqrt_budget200_if100_e50_ldam_s${LdamScaleTag}_seed3" "compatibility"
+    New-ResultRow "LDAM-DRW" "50" "1" "N/A" "ldam_drw_if50_e50_s$LdamScaleTag" "compatibility"
+    New-ResultRow "LDAM-DRW" "50" "2" "N/A" "ldam_drw_if50_e50_s${LdamScaleTag}_seed2" "compatibility"
+    New-ResultRow "LDAM-DRW" "50" "3" "N/A" "ldam_drw_if50_e50_s${LdamScaleTag}_seed3" "compatibility"
+    New-ResultRow "Sqrt B300 + LDAM" "50" "1" "300" "adaptive_sqrt_budget300_if50_e50_ldam_s$LdamScaleTag" "compatibility"
+    New-ResultRow "Sqrt B300 + LDAM" "50" "2" "300" "adaptive_sqrt_budget300_if50_e50_ldam_s${LdamScaleTag}_seed2" "compatibility"
+    New-ResultRow "Sqrt B300 + LDAM" "50" "3" "300" "adaptive_sqrt_budget300_if50_e50_ldam_s${LdamScaleTag}_seed3" "compatibility"
+)
+
 Write-Table "ccfb_main_if100.csv" $ccfbIf100
 Write-Table "ccfb_main_if50.csv" $ccfbIf50
 Write-Table "ccfb_stability_seeds.csv" $stabilityRows
 Write-Table "ccfb_stability_summary.csv" (New-AggregateRows $stabilityRows)
+Write-Table "ccfb_ldam_compat_stability.csv" (New-AggregateRows $ldamCompatRows)
 Write-Table "negative_modules.csv" $negativeRows
