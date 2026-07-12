@@ -1,0 +1,4 @@
+group,num_classes,sample_count_mean,bootstrap_k_std_mean,bootstrap_mode_fraction_mean,best_silhouette_mean,interpretation
+many,33,284.42424242424244,0.2683773942933447,0.8606060606060606,0.1100326981959921,lower k_std and higher mode_fraction means more stable cluster-count estimation
+medium,33,76.84848484848484,0.5859605813528699,0.8424242424242423,0.12004876859260327,lower k_std and higher mode_fraction means more stable cluster-count estimation
+few,34,20.176470588235293,0.7367512227682638,0.710344827586207,0.15419349588196854,lower k_std and higher mode_fraction means more stable cluster-count estimation
