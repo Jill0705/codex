@@ -52,6 +52,9 @@ def parse_args():
     p.add_argument('--weight-decay', type=float, default=5e-4)
     p.add_argument('--workers', type=int, default=2)
     p.add_argument('--device', default='cuda')
+    p.add_argument('--amp', action='store_true')
+    p.add_argument('--persistent-workers', action='store_true')
+    p.add_argument('--prefetch-factor', type=int, default=2)
     p.add_argument('--seed', type=int, default=1)
     p.add_argument('--feature-dim', type=int, default=64)
     p.add_argument('--synthetic-size', type=int, default=1024)
@@ -107,7 +110,11 @@ def maybe_adjust_logits(logits, log_prior, tau):
     return logits - tau * log_prior.view(1, -1)
 
 
-def run_epoch(model, loader, criterion, optimizer, device, train=True, epoch=0, log_prior=None, la_tau=1.0):
+def autocast_context(device, enabled):
+    return torch.amp.autocast(device_type=device.type, enabled=enabled and device.type == 'cuda')
+
+
+def run_epoch(model, loader, criterion, optimizer, device, train=True, epoch=0, log_prior=None, la_tau=1.0, scaler=None, amp=False):
     model.train(train)
     if train and hasattr(criterion, 'set_epoch'):
         criterion.set_epoch(epoch)
@@ -120,14 +127,20 @@ def run_epoch(model, loader, criterion, optimizer, device, train=True, epoch=0, 
         targets = targets.to(device, non_blocking=True)
         if train:
             optimizer.zero_grad(set_to_none=True)
-        features = model.backbone(images)
-        logits = model.head(features)
-        metric_logits = maybe_adjust_logits(logits, log_prior, la_tau)
-        loss_logits = metric_logits if log_prior is not None else logits
-        loss = criterion(loss_logits, targets)
+        with autocast_context(device, amp):
+            features = model.backbone(images)
+            logits = model.head(features)
+            metric_logits = maybe_adjust_logits(logits, log_prior, la_tau)
+            loss_logits = metric_logits if log_prior is not None else logits
+            loss = criterion(loss_logits, targets)
         if train:
-            loss.backward()
-            optimizer.step()
+            if scaler is not None and scaler.is_enabled():
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
             if hasattr(model.head, 'update_memory'):
                 model.head.update_memory(features, targets)
         batch_size = targets.size(0)
@@ -138,7 +151,7 @@ def run_epoch(model, loader, criterion, optimizer, device, train=True, epoch=0, 
 
 
 @torch.no_grad()
-def evaluate(model, loader, criterion, device, num_classes, cls_num_list, log_prior=None, la_tau=1.0):
+def evaluate(model, loader, criterion, device, num_classes, cls_num_list, log_prior=None, la_tau=1.0, amp=False):
     model.eval()
     losses = AverageMeter()
     accs = AverageMeter()
@@ -147,10 +160,11 @@ def evaluate(model, loader, criterion, device, num_classes, cls_num_list, log_pr
     for images, targets in tqdm(loader, desc='eval', leave=False):
         images = images.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
-        logits = model(images)
-        metric_logits = maybe_adjust_logits(logits, log_prior, la_tau)
-        loss_logits = metric_logits if log_prior is not None else logits
-        loss = criterion(loss_logits, targets)
+        with autocast_context(device, amp):
+            logits = model(images)
+            metric_logits = maybe_adjust_logits(logits, log_prior, la_tau)
+            loss_logits = metric_logits if log_prior is not None else logits
+            loss = criterion(loss_logits, targets)
         losses.update(loss.item(), targets.size(0))
         accs.update(accuracy(metric_logits, targets), targets.size(0))
         all_logits.append(metric_logits.cpu())
@@ -189,8 +203,15 @@ def main():
     save_json(vars(args), os.path.join(run_dir, 'args.json'))
     save_json({'cls_num_list': cls_num_list}, os.path.join(run_dir, 'class_counts.json'))
 
-    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=(device.type == 'cuda'))
-    val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=(device.type == 'cuda'))
+    loader_kwargs = {
+        'num_workers': args.workers,
+        'pin_memory': (device.type == 'cuda'),
+    }
+    if args.workers > 0:
+        loader_kwargs['persistent_workers'] = args.persistent_workers
+        loader_kwargs['prefetch_factor'] = args.prefetch_factor
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **loader_kwargs)
 
     model = build_model(args, num_classes, cls_num_list).to(device)
     if hasattr(model.head, 'proto_counts'):
@@ -207,16 +228,18 @@ def main():
     log_prior = make_log_prior(cls_num_list, device) if args.logit_adjustment else None
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    scaler = torch.amp.GradScaler('cuda', enabled=args.amp and device.type == 'cuda')
 
     best_acc = 0.0
     for epoch in range(1, args.epochs + 1):
         train_loss, train_acc = run_epoch(
             model, train_loader, criterion, optimizer, device,
-            train=True, epoch=epoch, log_prior=log_prior, la_tau=args.la_tau
+            train=True, epoch=epoch, log_prior=log_prior, la_tau=args.la_tau,
+            scaler=scaler, amp=args.amp
         )
         val_loss, val_acc, groups = evaluate(
             model, val_loader, criterion, device, num_classes, cls_num_list,
-            log_prior=log_prior, la_tau=args.la_tau
+            log_prior=log_prior, la_tau=args.la_tau, amp=args.amp
         )
         scheduler.step()
         row = {

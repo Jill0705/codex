@@ -17,7 +17,10 @@ param(
     [int]$ProtoBudget = 2000,
     [int]$KMin = 1,
     [int]$KMax = 8,
-    [int]$NumClasses = 0
+    [int]$NumClasses = 0,
+    [switch]$Amp,
+    [switch]$PersistentWorkers,
+    [int]$PrefetchFactor = 2
 )
 
 $ErrorActionPreference = "Continue"
@@ -58,10 +61,17 @@ function Get-CommonArgs {
         "--batch-size", "$BatchSize",
         "--lr", "$Lr",
         "--workers", "$Workers",
+        "--prefetch-factor", "$PrefetchFactor",
         "--device", $Device
     )
     if ($Pretrained) {
         $argsList += "--pretrained"
+    }
+    if ($Amp) {
+        $argsList += "--amp"
+    }
+    if ($PersistentWorkers) {
+        $argsList += "--persistent-workers"
     }
     if ($NumClasses -gt 0) {
         $argsList += @("--num-classes", "$NumClasses")
