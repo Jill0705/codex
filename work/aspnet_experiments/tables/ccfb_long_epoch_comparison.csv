@@ -1,0 +1,27 @@
+method,dataset,IF,epoch_budget,run_name,status,best_epoch,val,many,medium,few,prototypes,role
+CE,CIFAR-100-LT,100,100,ce_e100,ok,85,37.14,63.18,37.48,11.53,N/A,baseline
+Balanced Softmax,CIFAR-100-LT,100,100,balanced_softmax_if100_e100,ok,95,42.52,58.91,41.00,28.09,N/A,strong_baseline
+LDAM-DRW,CIFAR-100-LT,100,100,ldam_drw_if100_e100_s1,ok,86,40.55,62.85,43.52,16.03,N/A,strong_baseline
+Fixed K4,CIFAR-100-LT,100,100,fixed_k4_t01_tau025_e100,ok,86,37.37,66.18,37.45,9.32,400,prototype_baseline
+Sqrt B200,CIFAR-100-LT,100,100,adaptive_sqrt_budget200_e100,ok,92,37.17,65.39,38.45,8.53,200,main_method
+Sqrt B200 + LDAM,CIFAR-100-LT,100,100,adaptive_sqrt_budget200_if100_e100_ldam_s1,ok,83,41.00,59.85,44.61,19.21,200,compatibility
+CE,CIFAR-100-LT,50,100,ce_if50_e100,ok,92,42.81,65.48,44.15,19.50,N/A,baseline
+Balanced Softmax,CIFAR-100-LT,50,100,balanced_softmax_if50_e100,ok,89,46.63,59.79,45.55,34.91,N/A,strong_baseline
+LDAM-DRW,CIFAR-100-LT,50,100,ldam_drw_if50_e100_s1,ok,83,45.52,63.39,48.91,24.88,N/A,strong_baseline
+Fixed K3,CIFAR-100-LT,50,100,fixed_k3_if50_e100,ok,100,42.04,67.18,43.52,16.21,300,prototype_baseline
+Fixed K4,CIFAR-100-LT,50,100,fixed_k4_if50_e100,ok,95,41.40,66.15,43.42,15.41,400,prototype_baseline
+Sqrt B300,CIFAR-100-LT,50,100,adaptive_sqrt_budget300_if50_e100,ok,98,42.30,67.97,43.06,16.65,300,main_method
+Sqrt B300 + LDAM,CIFAR-100-LT,50,100,adaptive_sqrt_budget300_if50_e100_ldam_s1,ok,85,45.32,61.42,47.30,27.76,300,compatibility
+CE,CIFAR-100-LT,100,200,ce_e200,ok,172,38.91,66.97,38.94,11.65,N/A,baseline
+Balanced Softmax,CIFAR-100-LT,100,200,balanced_softmax_if100_e200,ok,183,44.53,62.18,42.94,28.94,N/A,strong_baseline
+LDAM-DRW,CIFAR-100-LT,100,200,ldam_drw_if100_e200_s1,ok,160,41.63,65.85,43.09,16.71,N/A,strong_baseline
+Fixed K4,CIFAR-100-LT,100,200,fixed_k4_t01_tau025_e200,ok,174,39.83,67.64,40.94,11.76,400,prototype_baseline
+Sqrt B200,CIFAR-100-LT,100,200,adaptive_sqrt_budget200_e200,ok,195,39.36,68.42,40.24,10.29,200,main_method
+Sqrt B200 + LDAM,CIFAR-100-LT,100,200,adaptive_sqrt_budget200_if100_e200_ldam_s1,ok,142,41.66,59.03,44.97,21.59,200,compatibility
+CE,CIFAR-100-LT,50,200,ce_if50_e200,missing,,,,,,N/A,baseline
+Balanced Softmax,CIFAR-100-LT,50,200,balanced_softmax_if50_e200,ok,193,49.25,64.85,47.18,36.12,N/A,strong_baseline
+LDAM-DRW,CIFAR-100-LT,50,200,ldam_drw_if50_e200_s1,ok,182,46.03,67.88,47.24,23.65,N/A,strong_baseline
+Fixed K3,CIFAR-100-LT,50,200,fixed_k3_if50_e200,ok,184,43.91,68.52,45.24,18.74,300,prototype_baseline
+Fixed K4,CIFAR-100-LT,50,200,fixed_k4_if50_e200,ok,189,43.58,68.58,45.06,17.88,400,prototype_baseline
+Sqrt B300,CIFAR-100-LT,50,200,adaptive_sqrt_budget300_if50_e200,ok,184,44.24,70.03,46.30,17.21,300,main_method
+Sqrt B300 + LDAM,CIFAR-100-LT,50,200,adaptive_sqrt_budget300_if50_e200_ldam_s1,ok,167,46.21,66.55,47.85,24.88,300,compatibility

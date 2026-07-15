@@ -26,6 +26,7 @@ from train import build_model
 
 DEFAULT_ARGS = {
     'allocation': 'log',
+    'backbone': 'resnet32',
     'confidence_temp': 4.0,
     'data_root': 'data',
     'dataset': 'cifar100lt',
@@ -35,6 +36,8 @@ DEFAULT_ARGS = {
     'feature_dim': 64,
     'fixed_k': 4,
     'imb_factor': 100,
+    'image_root': None,
+    'image_size': 224,
     'k_max': 4,
     'k_min': 1,
     'loss': 'ce',
@@ -45,9 +48,12 @@ DEFAULT_ARGS = {
     'proto_budget': None,
     'proto_mode': 'single',
     'prototype_update': 'grad',
+    'pretrained': False,
     'seed': 1,
     'synthetic_size': 1024,
     'temperature': 0.1,
+    'train_list': None,
+    'val_list': None,
 }
 
 
@@ -407,6 +413,10 @@ def main():
         seed=train_args.seed,
         synthetic_size=train_args.synthetic_size,
         num_classes=train_args.num_classes,
+        image_root=train_args.image_root,
+        train_list=train_args.train_list,
+        val_list=train_args.val_list,
+        image_size=train_args.image_size,
     )
     set_subset_transform(train_set, deterministic_train_transform(train_args.dataset))
 

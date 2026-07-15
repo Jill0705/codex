@@ -6,17 +6,23 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from aspnet_lt.backbones import build_backbone
 from aspnet_lt.classifiers import LinearHead, RecognitionModel, SubPrototypeHead
 from aspnet_lt.data import build_dataset
 from aspnet_lt.losses import build_loss
-from aspnet_lt.resnet_cifar import resnet32
 from aspnet_lt.utils import AverageMeter, accuracy, append_csv, classwise_accuracy, ensure_dir, group_accuracy, save_json, set_seed
 
 
 def parse_args():
     p = argparse.ArgumentParser(description='ASPNet stage-1 long-tailed experiments')
-    p.add_argument('--dataset', default='cifar100lt', choices=['synthetic', 'cifar10lt', 'cifar100lt'])
+    p.add_argument('--dataset', default='cifar100lt', choices=['synthetic', 'cifar10lt', 'cifar100lt', 'imagenetlt', 'placeslt', 'inatlt'])
     p.add_argument('--data-root', default='data')
+    p.add_argument('--image-root', default=None)
+    p.add_argument('--train-list', default=None)
+    p.add_argument('--val-list', default=None)
+    p.add_argument('--image-size', type=int, default=224)
+    p.add_argument('--backbone', default='resnet32', choices=['resnet32', 'resnet18', 'resnet50'])
+    p.add_argument('--pretrained', action='store_true')
     p.add_argument('--imb-factor', type=float, default=100)
     p.add_argument('--model', default='adaptive_proto', choices=['ce', 'proto', 'adaptive_proto'])
     p.add_argument('--proto-mode', default='single', choices=['single', 'fixed'])
@@ -56,7 +62,7 @@ def parse_args():
 
 
 def build_model(args, num_classes, cls_num_list):
-    backbone = resnet32(feature_dim=args.feature_dim)
+    backbone = build_backbone(args.backbone, feature_dim=args.feature_dim, pretrained=args.pretrained)
     if args.model == 'ce':
         head = LinearHead(args.feature_dim, num_classes)
     elif args.model == 'proto':
@@ -170,6 +176,10 @@ def main():
         seed=args.seed,
         synthetic_size=args.synthetic_size,
         num_classes=args.num_classes,
+        image_root=args.image_root,
+        train_list=args.train_list,
+        val_list=args.val_list,
+        image_size=args.image_size,
     )
     args.num_classes = num_classes
     stamp = time.strftime('%Y%m%d_%H%M%S')

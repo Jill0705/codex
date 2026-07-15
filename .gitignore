@@ -18,6 +18,7 @@ __pycache__/
 work/aspnet_experiments/data/
 work/aspnet_experiments/logs/
 work/aspnet_experiments/runs/
+work/aspnet_experiments/tmp_imagenet_smoke/
 work/aspnet_experiments/**/*.pt
 work/aspnet_experiments/**/*.pth
 work/aspnet_experiments/**/*.ckpt
